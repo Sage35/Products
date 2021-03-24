@@ -61,6 +61,7 @@ app.get('/products/:id/styles', function (req, res) {
   let skus = [{styleId: undefined, id:undefined, quantity: undefined, size: undefined}]
 
   session
+  //TODO Complete this API response
   // .run(`MATCH (s:Style) WHERE s.prodId=${productId} RETURN s`)
   // .then((results) => {results.records.forEach((record) => productStyles.push(record._fields[0].properties))})
   // .run(`MATCH (p:Product {id:1})--(s:Style) WITH s MATCH (s)--(ph:Photos) RETURN DISTINCT ph`)
