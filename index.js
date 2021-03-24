@@ -9,7 +9,14 @@ app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: false}))
 // app.use('/products', routes);
 
-var driver = neo4j.driver('bolt://localhost', neo4j.auth.basic('neo4j', 'asdf'), { disableLosslessIntegers: true })
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', `http://localhost:${3000}`); //TODO replace with env variable of the FEC server url
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+  next();
+});
+
+var driver = neo4j.driver('bolt://localhost', neo4j.auth.basic('neo4j', 'asdf'), { disableLosslessIntegers: true }) //TODO replace with env variable of the FEC server url
 var session = driver.session();
 
 app.get('/', (req, res) => {
@@ -99,7 +106,7 @@ app.get('/products/:id/related', function (req, res) {
 
 
 app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`)
+  console.log(`Example app listening at http://localhost:${port}`) //TODO replace with env variable of the FEC server url
 })
 
 module.exports = app

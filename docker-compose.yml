@@ -15,7 +15,7 @@ services:
     - $HOME/neo4j/import:/import
   node-server:
     container_name: products-server
-    build: ./node-server/
+    build: .
     restart: always
     depends_on:
       - neo4j
