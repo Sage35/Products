@@ -23,11 +23,14 @@ app.get('/products', function (req, res) {
   let max = (page*count);
   let products = [];
   session
-    .run(`MATCH (p:Product) WHERE p.id>=${min} AND p.id<=${max} RETURN p LIMIT 5`)
+    .run(`MATCH (p:Product) WHERE p.id>=${min} AND p.id<=${max} RETURN p`)
     .then((result) => {result.records.forEach((record) => products.push(record._fields[0].properties))})
     .then(() => {res.send(products)})
     .catch((err) => console.log(err))
 })
+
+
+
 
 app.get('/products/:id', function (req, res) {
   let productId = req.params.id
@@ -44,6 +47,11 @@ app.get('/products/:id', function (req, res) {
   .then(() => {productInfo.features = productFeatures; res.send(productInfo)})
   .catch((err) => console.log(err))
 })
+
+
+
+
+
 
 app.get('/products/:id/styles', function (req, res) {
   let productId = req.params.id
@@ -68,12 +76,12 @@ app.get('/products/:id/styles', function (req, res) {
 
     console.log(skus)
   })
-
-  // .then(() => {productInfo.features = productFeatures; res.send(productInfo)})
-  // .catch((err) => console.log(err))
-  // .finally(() => session.close())
-
 })
+
+
+
+
+
 
 app.get('/products/:id/related', function (req, res) {
   let productId = req.params.id
