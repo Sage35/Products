@@ -1,20 +1,20 @@
 const express = require('express')
 const bodyParser = require('body-parser')
-// const morgan = require('morgan');
-// const routes = require('./Server/routes')
 var neo4j = require('neo4j-driver')
 
 const app = express()
-const port = 3000
+const port = 4000
 
-// app.use(morgan('dev'));
-// app.use(express.json());
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: false}))
 // app.use('/products', routes);
 
 var driver = neo4j.driver('bolt://localhost', neo4j.auth.basic('neo4j', 'asdf'), { disableLosslessIntegers: true })
 var session = driver.session();
+
+app.get('/', (req, res) => {
+  res.status(200).send('connected to server!');
+});
 
 app.get('/products', function (req, res) {
   let page = Number(req.query.page) || 1;

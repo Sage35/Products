@@ -1,39 +1,41 @@
 version: "3.8"
 services:
-  neo4j-db:
-    container_name: reviews-db
-    build: ./db/
+  neo4j:
+    container_name: products-db
+    image: neo4j:4.2.1-enterprise
     restart: always
     environment:
-      POSTGRES_DB: reviews
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      NEO4J_AUTH: none
     ports:
-      - "5432:5432"
+      - 7474:7474
+      - 7687:7687
     volumes:
-      - postgres-volume:/var/lib/postgresql/data
+    - ./data:/data
+    - ./import:/import
   node-server:
-    container_name: reviews-server
-    build: ./server/
+    container_name: products-server
+    build: ./node-server/
     restart: always
     depends_on:
-      - db
+      - neo4j
     environment:
-      DATABASE_HOST: database
-      DATABASE_URL: postgres://postgres:postgres@reviews-db:5432/reviews
+      DATABASE_HOST: neo4j
+      DATABASE_URL: bolt://localhost:7687
       NODE_ENV: development
     ports:
-      - "3000:3000"
+      - 4000:4000
   fec:
     container_name: fec
     build: ./FEC/
     restart: always
     depends_on:
-      - server
+      - node-server
     environment:
       NODE_ENV: development
       SERVER_IP: localhost
     ports:
-      - "8000:8000"
+      - 3000:3000
 volumes:
-  postgres-volume:
+  neo4j-data:
+  neo4j-import:
