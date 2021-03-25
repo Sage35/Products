@@ -13,18 +13,22 @@ app.use(bodyParser.urlencoded({extended: true}))
 // app.use('/products', routes);
 
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', `http://${process.env.SERVER_URL})}:${3000}`); //TODO replace with env variable of the FEC server url
+  res.setHeader('Access-Control-Allow-Origin', `http://${process.env.SERVER_URL}:3000)}`);
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
   next();
 });
 
-var driver = neo4j.driver(`bolt://neo4j`, neo4j.auth.basic('neo4j', 'asdf'), { disableLosslessIntegers: true }) //TODO replace with env variable of the FEC server url
+var driver = neo4j.driver(`bolt://neo4j`, neo4j.auth.basic('neo4j', 'asdf'), { disableLosslessIntegers: true })
 var session = driver.session();
 
-app.get('/', (req, res) => {
+app.get(`/`, (req, res) => {
   res.status(200).send('connected to server!');
 });
+
+app.get(`/${process.env.LOADER}`, (req, res) => {
+  res.status(200).send(process.env.LOADER)
+})
 
 app.get('/products', function (req, res) {
   let page = Number(req.query.page) || 1;
@@ -39,14 +43,10 @@ app.get('/products', function (req, res) {
     .catch((err) => console.log(err))
 })
 
-
-
-
 app.get('/products/:id', function (req, res) {
   let productId = req.params.id
   let productInfo = {};
   let productFeatures = [];
-
   session
   .run(`MATCH (p:Product) WHERE p.id=${productId} RETURN p`)
   .then((result) => {productInfo = result.records[0]._fields[0].properties})
@@ -59,15 +59,10 @@ app.get('/products/:id', function (req, res) {
 })
 
 
-
-
-
-
 app.get('/products/:id/styles', function (req, res) {
   let productId = req.params.id
   let productStyles = [];
   let styleInfo = {styleId: undefined, name: undefined, origPrice: undefined, salePrice: undefined, default: undefined, photos: [], skus:{}}
-
   session
   .run(`MATCH (s:Style) WHERE s.prodId=${productId} RETURN s`)
   .then((results) => {
@@ -76,7 +71,6 @@ app.get('/products/:id/styles', function (req, res) {
   .then(() => session.run(`MATCH (p:Product {id:1})--(s:Style) WITH s MATCH (s)--(ph:Photos) RETURN DISTINCT ph`))
   .then((results) => {
     let stylePhotos = {}
-
     results.records.forEach((record) => {
       if (stylePhotos[record._fields[0].properties.styleId]) {
         stylePhotos[record._fields[0].properties.styleId].push(record._fields[0].properties)
@@ -84,35 +78,32 @@ app.get('/products/:id/styles', function (req, res) {
         stylePhotos[record._fields[0].properties.styleId] = [record._fields[0].properties]
       }
     })
-
     for(styles of productStyles) {
       styles.photos = stylePhotos[styles.id]
     }
-    console.log(productStyles)
   })
-  // .run(`MATCH (p:Product {id:${productId}})--(s:Style) WITH s MATCH (s)--(sk:Sku) RETURN DISTINCT sk`)
-  // .then((results) => {
-  //   let styleSku = {};
-  //   results.records.forEach((record) => {
-  //     if (styleSku[record._fields[0].properties.styleId]) {
-  //       styleSku[record._fields[0].properties.styleId].push(record._fields[0].properties)
-  //     } else {
-  //       styleSku[record._fields[0].properties.styleId] = [record._fields[0].properties]
-  //     }
-  //   })
-  //   console.log(styleSku)
-  // })
+  .then (() => session.run(`MATCH (p:Product {id:${productId}})--(s:Style) WITH s MATCH (s)--(sk:Sku) RETURN DISTINCT sk`))
+  .then((results) => {
+    let styleSku = {};
+    results.records.forEach((record) => {
+      if (styleSku[record._fields[0].properties.styleId]) {
+        styleSku[record._fields[0].properties.styleId].push(record._fields[0].properties)
+      } else {
+        styleSku[record._fields[0].properties.styleId] = [record._fields[0].properties]
+      }
+    })
+    for(styles of productStyles) {
+      styles.skus = styleSku[styles.id]
+    }
+  })
+  .then(() => {res.send(productStyles)})
+  .catch((err) => console.log(err))
 })
-
-
-
-
 
 
 app.get('/products/:id/related', function (req, res) {
   let productId = req.params.id
   let relatedProducts = [];
-
   session
   .run(`MATCH (p1:Product {id:${productId}})-[:IS_SIMILAR_TO]->(p2:Product) RETURN p2.id`)
   .then((result) => {result.records.forEach((record) => {
@@ -124,7 +115,7 @@ app.get('/products/:id/related', function (req, res) {
 
 
 app.listen(port, () => {
-  console.log(`Example app listening at http://${process.env.SERVER_URL}:${port}`) //TODO replace with env variable of the FEC server url
+  console.log(`Example app listening at http://localhost:${port}`)
 })
 
 module.exports = app
