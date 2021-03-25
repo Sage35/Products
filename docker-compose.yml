@@ -3,9 +3,12 @@ services:
   neo4j:
     container_name: products-db
     image: neo4j:4.2.1-enterprise
-    restart: always
+    restart: "no"
     environment:
       NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      NEO4J_dbms_memory_pagecache_size: 2G
+      NEO4J_dbms_memory_heap_max__size: 4G
+      NEO4J_dbms_memory_heap_initial__size: 4G
       NEO4J_AUTH: none
     ports:
       - 7474:7474
@@ -21,7 +24,7 @@ services:
       - neo4j
     environment:
       DATABASE_HOST: neo4j
-      DATABASE_URL: bolt://localhost:7687
+      DATABASE_URL: bolt://localhost:7687 #TODO replace with env variable of the FEC server url
       NODE_ENV: development
     ports:
       - 4000:4000
@@ -33,6 +36,6 @@ services:
       - node-server
     environment:
       NODE_ENV: development
-      SERVER_IP: localhost
+      SERVER_IP: localhost #TODO replace with env variable of the FEC server url
     ports:
       - 3000:3000

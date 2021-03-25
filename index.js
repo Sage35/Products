@@ -1,22 +1,25 @@
 const express = require('express')
 const bodyParser = require('body-parser')
-var neo4j = require('neo4j-driver')
+const neo4j = require('neo4j-driver')
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config()
+}
 
 const app = express()
 const port = 4000
 
 app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({extended: false}))
+app.use(bodyParser.urlencoded({extended: true}))
 // app.use('/products', routes);
 
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', `http://localhost:${3000}`); //TODO replace with env variable of the FEC server url
+  res.setHeader('Access-Control-Allow-Origin', `http://${process.env.SERVER_URL})}:${3000}`); //TODO replace with env variable of the FEC server url
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
   res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
   next();
 });
 
-var driver = neo4j.driver('bolt://localhost', neo4j.auth.basic('neo4j', 'asdf'), { disableLosslessIntegers: true }) //TODO replace with env variable of the FEC server url
+var driver = neo4j.driver(`bolt://neo4j`, neo4j.auth.basic('neo4j', 'asdf'), { disableLosslessIntegers: true }) //TODO replace with env variable of the FEC server url
 var session = driver.session();
 
 app.get('/', (req, res) => {
@@ -64,26 +67,41 @@ app.get('/products/:id/styles', function (req, res) {
   let productId = req.params.id
   let productStyles = [];
   let styleInfo = {styleId: undefined, name: undefined, origPrice: undefined, salePrice: undefined, default: undefined, photos: [], skus:{}}
-  let photos = [{ styleId: undefined, id:undefined, thumnail_url: undefined, url: undefined }]
-  let skus = [{styleId: undefined, id:undefined, quantity: undefined, size: undefined}]
 
   session
-  //TODO Complete this API response
-  // .run(`MATCH (s:Style) WHERE s.prodId=${productId} RETURN s`)
-  // .then((results) => {results.records.forEach((record) => productStyles.push(record._fields[0].properties))})
-  // .run(`MATCH (p:Product {id:1})--(s:Style) WITH s MATCH (s)--(ph:Photos) RETURN DISTINCT ph`)
-  // .then((results) => {results.records.forEach((record) => {
-  //   photos.push(record._fields[0].properties)
-  // })})
-  // .then(() => console.log(photos))
-  .run(`MATCH (p:Product {id:${productId}})--(s:Style) WITH s MATCH (s)--(sk:Sku) RETURN DISTINCT sk`)
-  .then((results) => {results.records.forEach((record) => {
-    skus.push(record._fields[0].properties)
-  })})
-  .then(() => {
+  .run(`MATCH (s:Style) WHERE s.prodId=${productId} RETURN s`)
+  .then((results) => {
+    results.records.forEach((record) => productStyles.push(record._fields[0].properties))
+    })
+  .then(() => session.run(`MATCH (p:Product {id:1})--(s:Style) WITH s MATCH (s)--(ph:Photos) RETURN DISTINCT ph`))
+  .then((results) => {
+    let stylePhotos = {}
 
-    console.log(skus)
+    results.records.forEach((record) => {
+      if (stylePhotos[record._fields[0].properties.styleId]) {
+        stylePhotos[record._fields[0].properties.styleId].push(record._fields[0].properties)
+      } else {
+        stylePhotos[record._fields[0].properties.styleId] = [record._fields[0].properties]
+      }
+    })
+
+    for(styles of productStyles) {
+      styles.photos = stylePhotos[styles.id]
+    }
+    console.log(productStyles)
   })
+  // .run(`MATCH (p:Product {id:${productId}})--(s:Style) WITH s MATCH (s)--(sk:Sku) RETURN DISTINCT sk`)
+  // .then((results) => {
+  //   let styleSku = {};
+  //   results.records.forEach((record) => {
+  //     if (styleSku[record._fields[0].properties.styleId]) {
+  //       styleSku[record._fields[0].properties.styleId].push(record._fields[0].properties)
+  //     } else {
+  //       styleSku[record._fields[0].properties.styleId] = [record._fields[0].properties]
+  //     }
+  //   })
+  //   console.log(styleSku)
+  // })
 })
 
 
@@ -106,7 +124,7 @@ app.get('/products/:id/related', function (req, res) {
 
 
 app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`) //TODO replace with env variable of the FEC server url
+  console.log(`Example app listening at http://${process.env.SERVER_URL}:${port}`) //TODO replace with env variable of the FEC server url
 })
 
 module.exports = app
